@@ -10,31 +10,6 @@ import GitHub from './icons/GitHub.vue'
 // @ts-ignore
 const { store } = defineProps(['store'])
 
-const currentCommit = __COMMIT__
-const activeVersion = ref(`@${currentCommit}`)
-const publishedVersions = ref<string[]>()
-const expanded = ref(false)
-
-async function toggle() {
-  expanded.value = !expanded.value
-  if (!publishedVersions.value) {
-    publishedVersions.value = await fetchVersions()
-  }
-}
-
-async function setVueVersion(v: string) {
-  activeVersion.value = `loading...`
-  await store.setVueVersion(v)
-  activeVersion.value = `v${v}`
-  expanded.value = false
-}
-
-function resetVueVersion() {
-  store.resetVueVersion()
-  activeVersion.value = `@${currentCommit}`
-  expanded.value = false
-}
-
 async function copyLink() {
   await navigator.clipboard.writeText(location.href)
   alert('Sharable URL has been copied to clipboard.')
@@ -43,44 +18,7 @@ async function copyLink() {
 function toggleDark() {
   const cls = document.documentElement.classList
   cls.toggle('dark')
-  localStorage.setItem(
-    'vue-sfc-playground-prefer-dark',
-    String(cls.contains('dark'))
-  )
-}
-
-onMounted(async () => {
-  window.addEventListener('click', () => {
-    expanded.value = false
-  })
-})
-
-async function fetchVersions(): Promise<string[]> {
-  const res = await fetch(
-    `https://api.github.com/repos/vuejs/core/releases?per_page=100`
-  )
-  const releases: any[] = await res.json()
-  const versions = releases.map(r =>
-    /^v/.test(r.tag_name) ? r.tag_name.slice(1) : r.tag_name
-  )
-  // if the latest version is a pre-release, list all current pre-releases
-  // otherwise filter out pre-releases
-  let isInPreRelease = versions[0].includes('-')
-  const filteredVersions: string[] = []
-  for (const v of versions) {
-    if (v.includes('-')) {
-      if (isInPreRelease) {
-        filteredVersions.push(v)
-      }
-    } else {
-      filteredVersions.push(v)
-      isInPreRelease = false
-    }
-    if (filteredVersions.length >= 30 || v === '3.0.10') {
-      break
-    }
-  }
-  return filteredVersions
+  localStorage.setItem('vue-sfc-playground-prefer-dark', String(cls.contains('dark')))
 }
 </script>
 
@@ -91,27 +29,6 @@ async function fetchVersions(): Promise<string[]> {
       <span>Vue SFC Playground</span>
     </h1>
     <div class="links">
-      <div class="version" @click.stop>
-        <span class="active-version" @click="toggle">
-          Version: {{ activeVersion }}
-        </span>
-        <ul class="versions" :class="{ expanded }">
-          <li v-if="!publishedVersions"><a>loading versions...</a></li>
-          <li v-for="version of publishedVersions">
-            <a @click="setVueVersion(version)">v{{ version }}</a>
-          </li>
-          <li>
-            <a @click="resetVueVersion">This Commit ({{ currentCommit }})</a>
-          </li>
-          <li>
-            <a
-              href="https://app.netlify.com/sites/vue-sfc-playground/deploys"
-              target="_blank"
-              >Commits History</a
-            >
-          </li>
-        </ul>
-      </div>
       <button title="Toggle dark mode" class="toggle-dark" @click="toggleDark">
         <Sun class="light" />
         <Moon class="dark" />
@@ -119,21 +36,11 @@ async function fetchVersions(): Promise<string[]> {
       <button title="Copy sharable URL" class="share" @click="copyLink">
         <Share />
       </button>
-      <button
-        title="Download project files"
-        class="download"
-        @click="downloadProject(store)"
-      >
+      <button title="Download project files" class="download" @click="downloadProject(store)">
         <Download />
       </button>
-      <button
-          title="View on GitHub"
-          class="github"
-      >
-        <a
-            href="https://github.com/vuejs/core/tree/main/packages/sfc-playground"
-            target="_blank"
-        >
+      <button title="View on GitHub" class="github">
+        <a href="https://github.com/vuejs/core/tree/main/packages/sfc-playground" target="_blank">
           <GitHub />
         </a>
       </button>
